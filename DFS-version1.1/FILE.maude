@@ -1,0 +1,169 @@
+fmod FILE is
+protecting NAT . 
+protecting STRING . 
+
+--- 文件名 文件状态 文件列表 文件规格
+sorts File Filelist Filelocate Filecontent .
+subsort File < Filelist .
+
+
+var fl : Filelist .
+
+vars f f1 f2 : File .
+vars s t : String .
+vars n1 n2 : Nat .
+var fc fc2 : Filecontent .
+var FL  : Filelocate .
+
+---文件定义
+op f : Nat -> File .
+
+---文件内容 定义
+op createfile : File String -> Filecontent .
+eq createfile(f1,s) = [(f1 ),(s)] .
+op fcnil : -> Filecontent .
+op _,_ : Filecontent Filecontent -> Filecontent [ assoc id: fcnil] .
+op [_,_] : File String -> Filecontent .
+
+---- 
+op getcontent : Filecontent File -> String .
+eq getcontent(fcnil,f) =  "" .
+
+
+
+op getfc : Filecontent File -> Filecontent .
+eq getfc(fc,[f,s],f1) = if f == f1 then [f,s] else getfc(fc,f1) fi .
+eq getfc(fcnil, f) = fcnil .
+
+
+op getfile : Filecontent File -> File .
+op deletefile : Filecontent File -> Filecontent .
+eq deletefile(fcnil , f) = fcnil .
+ceq deletefile((fc,[f1,s]) ,f) = fc  if f1 == f .
+ceq deletefile((fc,[f1,s]) ,f) = deletefile(fc,f),[f1,s]  if f1 =/= f .
+
+op upd : Filecontent File String -> Filecontent .
+eq upd((fc,[f,s]),f2,t) = if f2 == f then fc,[f,t]  else (upd(fc,f2,t) , [f,s]   ) fi  .
+eq upd(fcnil,f,s) = fcnil .
+
+
+----
+op findfile : Filecontent File -> Bool .
+eq findfile(fcnil ,f) = false .
+eq findfile((fc,[f1,s]) , f   ) = if f1 == f  then true else findfile(fc ,f) fi .
+
+op adfindfile : Filecontent Filecontent -> Bool .
+eq adfindfile(([f,s]),fc)  = findfile(fc ,f) .
+eq adfindfile((fcnil),fc)  = false .
+eq adfindfile((fc2,[f,s]),fc) =  if findfile(fc,f) then true  else  adfindfile(fc2,fc)  fi .
+
+
+---
+op findconflictinfc : Filecontent -> Bool .
+eq findconflictinfc([f,s] ) =  true .
+eq findconflictinfc(fc,[f,s]) = if findfile(fc,f) then false else  findconflictinfc(fc) fi .
+
+
+
+
+----
+op fctolist : Filecontent -> Filelist .
+eq fctolist(fc,[f,s]) = fctolist(fc) f .
+eq fctolist(fcnil) = fnil .
+
+
+---文件位置 定义
+op putfile : File Nat Nat -> Filelocate .
+eq putfile(f,n1,n2) = [f,n1,n2] .
+op [_,_,_] : File Nat Nat -> Filelocate .
+op flnil : -> Filelocate .
+op _,_ : Filelocate Filelocate -> Filelocate [ assoc id: flnil] .
+op getmainlocate : Filelocate File -> Nat . 
+eq getmainlocate( (FL,[f,n1,n2]),f1) = if  f1 == f  then n1 else  getmainlocate(FL,f1) fi .
+
+op getslavelocate : Filelocate File -> Nat .
+eq getslavelocate( (FL,[f,n1,n2]),f1) = if  f1 == f  then n2 else  getslavelocate(FL,f1) fi .
+
+op findfileim : Filelocate File -> Bool .
+eq findfileim(flnil,f) = false .
+eq findfileim((FL,[f1,n1,n2]) , f   ) = if f1 == f  then true else findfileim(FL ,f) fi .
+
+op existfileinm : Filelocate Filecontent -> Bool .
+eq existfileinm(flnil,fc) = false .
+eq existfileinm(FL,fcnil) = false .
+eq existfileinm(FL,(fc,[f,s]))  = if findfileim(FL,f) then true else existfileinm(FL,fc) fi .
+
+
+
+op removefileinfl : Filelocate File  ->  Filelocate .
+eq removefileinfl(flnil , f) = flnil .
+ceq removefileinfl((FL,[f1,n1,n2]) ,f) = FL  if f1 == f .
+ceq removefileinfl((FL,[f1,n1,n2]) ,f) = removefileinfl(FL,f),[f1,n1,n2]  if f1 =/= f .
+
+op fltolist : Filelocate -> Filelist .
+eq fltolist(FL,[f,n1,n2]) = fltolist(FL) f .
+eq fltolist(flnil) = fnil .
+
+
+
+
+---文件列表定义
+op fnil : -> Filelist .
+op __ : Filelist Filelist -> Filelist [ assoc id: fnil] .
+
+---文件列表函数定义
+op filelist-add : Filelist File -> Filelist .
+op filelist-delete : Filelist File -> Filelist .
+op filelistlen : Filelist -> Nat .
+op filelist-find : Filelist File -> Bool .
+
+ceq filelist-find(f2 , f1) = true
+if f2 == f1 .
+ceq filelist-find(f2 , f1) = false 
+if f2 =/= f1 .
+
+eq filelist-find(fnil , f1) = false .
+eq filelist-find(fl f1 , f2) = if 
+	(f2 == f1) 
+	then true 
+	else filelist-find(fl, f2)  fi .
+
+ceq filelist-add(fl,f1) = fl  
+if filelist-find(fl, f1) .
+
+ceq filelist-add(fl, f1) = fl f1   
+if filelist-find(fl, f1) == false .
+
+
+eq filelist-delete(f1,f1) = fnil .
+
+ceq filelist-delete(fl , f2) =  fl 
+if not filelist-find(fl,f2) .
+
+
+
+
+ceq filelist-delete(fl f1 , f2) = if (f2 =/= f1)
+ then   filelist-delete(fl,f2) f1
+ else fl 
+ fi 
+ 
+ if filelist-find(fl f1,f2) .
+ 
+eq filelistlen(fnil) = 0 .
+eq filelistlen(fl f1) = 1 + filelistlen(fl) .
+
+
+endfm 
+
+***(
+
+
+
+( CreateFile( f(1),"1" )   ) 
+( DeleteFile (f(1))       )
+
+( CreateFile( f(2),"1" )   ) 
+( CreateFile( f(3),"1" )   ) 
+( CreateFile( f(4),"1" )   ) 
+)

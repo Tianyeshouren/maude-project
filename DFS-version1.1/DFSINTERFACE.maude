@@ -1,0 +1,605 @@
+
+load FILE.maude
+load MACHINE.maude
+load UN.maude 
+---load FILEGRAMMAR.maude 
+
+mod DFSINTERFACE is
+
+    including  LOOP-MODE .
+    
+   --- including  FILEGRAMMAR .
+   ---  including  FILERL .
+    including  MACHINE .
+    protecting META-LEVEL .
+    including  UN .
+
+    protecting CONVERSION .
+    
+    ---将输入语句定义在此！
+    sorts  CFAction storeAction removeAction locateAction runAction stopAction showAction DFAction systemAction  Action .
+    subsorts CFAction storeAction removeAction locateAction runAction stopAction showAction DFAction systemAction < Action .
+    op store : File -> storeAction .
+    op storeall : -> storeAction .
+    op remove : File -> removeAction .
+    op alter : File String -> removeAction .
+    op alter! : File String Nat -> removeAction .
+    op locate  : File  -> locateAction .
+    op vi : File -> locateAction .
+    op vi : File Nat -> locateAction .
+    op run : Nat ->  runAction .
+    op close : Nat -> stopAction .
+    op showall : -> showAction .
+    ops showfs help man showbackup : -> showAction .
+    op CreateFile : File String -> CFAction .
+    op cf : Filecontent -> CFAction .
+    op DeleteFile : File -> DFAction .
+    op rm : -> DFAction .
+    ops backup restore checkcon init :  -> systemAction .
+    
+
+    ---system
+    op <_;_;_;_> : Action Config Config QidList -> State .
+    op dfs : -> System .
+    op idle : -> Action .
+    eq dfs = [nil, < idle ; 
+    
+    [< M1[open,0,fcnil], M2[open,0,fcnil], M3[open,0,fcnil], M4[open,0,fcnil] > | [1,2,flnil,fcnil] ] ; [< M1[open,0,fcnil], M2[open,0,fcnil], M3[open,0,fcnil], M4[open,0,fcnil] > | [1,2,flnil,fcnil] ] ;
+
+        '\n
+    ' ' ' ' ' ' ' ' ' ' ' ' ' '******************** '    '\n
+     ' ' ' '  ' ' ' ' ' ' ' ' ' '  ' 'Welcome 'to ('\r 'D)'\b ('F )('\g 'S) '\o '    '\n
+     ' ' ' ' ' ' ' ' ' ' ' ' ' '******************** '    '\n
+       ' ' ' ' ' ' ' '  ' ' ' ' ' ' ' ' ' '\g 'version ' '1.1 '\n
+    
+    '\o  ' ' ' ' ' ' '----------------------------------- '\n
+    ' ' ' ' ' ' '\o '| '\y 'Input ''man' 'to 'get 'command 'list '\o '| '\n 
+    '\o  ' ' ' ' ' ' '----------------------------------- '\n
+
+
+
+    >, nil] .
+
+
+  
+  
+    vars CU BK : Config .
+    var  A : Action .
+    var  C : Config .
+    var  F : File .
+    var  FL : Filelocate .
+    vars FC MFC1 MFC2 MFC3 MFC4 : Filecontent .
+    var  UN : UNstate .
+    vars QIL QIL' QIL'' : QidList .
+    vars S S1 S2 S3 S4 : String .
+    vars m1 m2 m3 m4 : Machine-state .
+    vars mc' mc : Machine-config .
+    vars N N1 N2 MN1 MN2 MN3 MN4 : Nat .
+    vars o1 o2 o3 o4 : ms .
+    var  lm : Livemachine .
+    var flist : Filelist .
+    
+
+
+crl [in] :
+      [QIL, < idle ; C ; BK ; nil >, QIL']
+       => if T:ResultPair? :: ResultPair  
+          then 
+                  if getType(T:ResultPair?) == 'CFAction  
+                  then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ; BK ;  nil >,  QIL']
+                  else    
+                        if getType(T:ResultPair?) == 'DFAction
+                        then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ;  BK ; nil >,  QIL']
+                        else  
+                            if getType(T:ResultPair?) == 'storeAction
+                            then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ;  BK ; nil >,  QIL']
+                            else  
+                                  if getType(T:ResultPair?) == 'removeAction
+                                  then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ; BK ;  nil >,  QIL']
+                                  else 
+                                       if getType(T:ResultPair?) == 'showAction
+                                       then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ;  BK ; nil >,  QIL'] 
+                                       else 
+                                             if getType(T:ResultPair?) == 'runAction or getType(T:ResultPair?) == 'stopAction
+                                             then [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ; BK ;  nil >,  QIL']
+                                             else 
+                                                  if getType(T:ResultPair?) == 'locateAction  or getType(T:ResultPair?) == 'systemAction
+                                                  then  [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; C ;  BK ; nil >,  QIL']
+                                                  else [nil, < idle ; C ; BK ;  nil >, 'ERROR 'ACTION: QIL]
+                                                  fi
+                                             fi 
+                                      fi
+                                      
+                                  fi
+                            fi 
+
+                        fi
+                  fi       
+          
+          else [nil, < idle ; C ; BK ; nil >, 'ERROR 'INPUT: QIL]
+          fi
+       
+if QIL =/= nil
+/\ T:ResultPair?  := metaParse(upModule('DFSINTERFACE, false),  QIL, 'Action) .
+
+
+
+crl [out] :
+       [QIL, < A ; C ; BK ; QIL' >, QIL'']
+       => [QIL, < A ; C ; BK ; nil >, QIL''  QIL']
+       if QIL' =/= nil .
+
+
+
+
+rl [initxxxx] : 
+         < init ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil > =>
+         if  open?(mc,1) and  open?(mc,2) and open?(mc,3) and  open?(mc,4)  
+            then  < idle ; [ < M1[open,0,fcnil], M2[open,0,fcnil], M3[open,0,fcnil], M4[open,0,fcnil] > | [1,2,flnil,fcnil] ] ; BK ;  ('\g 'INIT 'SUCCESS '! '\n )>
+            else  < idle ; [ mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'MACHINE 'NOT 'ALL 'AVAILABLE '!:  '\n ) >
+            fi .
+      
+
+
+
+crl [createsuccess] :
+        < CreateFile(F,S) ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil >
+        => < idle ; [mc | [N1,N2,FL,FC,createfile(F,S)]]; BK ; ('\g 'Create 'Success '!: '\n '\y showfc(FC,createfile(F,S)) '\n) > 
+if not findfile(FC,F) .
+
+rl [createfilelist] :
+        < cf(MFC1) ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil >
+        => if findconflictinfc(MFC1) 
+            then 
+                if adfindfile(MFC1,FC) 
+                then < idle ; [mc | [N1,N2,FL,FC]]; BK ; ('\r 'Create 'Failed ''files 'exist' '!: '\n '\y showfc(FC) '\n '\o showfc(MFC1) '\n) > 
+                else < idle ; [mc | [N1,N2,FL,(FC,MFC1)]]; BK ; ('\g 'Create 'Success '!: '\n '\y showfc(FC,MFC1) '\n) > 
+                fi
+            else < idle ; [mc | [N1,N2,FL,FC]]; BK ; ('\r 'Create 'Failed  ''filename 'conflict'  '!: '\n '\o showfc(MFC1) '\n) > 
+            fi .
+
+
+
+crl [createfail] :
+        < CreateFile(F,S) ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil >
+        => < idle ; [mc | [N1,N2,FL,FC]]; BK ; ('\r 'Create 'Failed ''filename 'conflict' '!: '\n '\y showfc(FC) '\n) > 
+if findfile(FC,F) .
+
+
+crl [deletesuccess] :        
+        < DeleteFile(F) ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil >
+        => < idle ; [mc | [N1,N2,FL,deletefile(FC,F)] ]; BK ; ('\g 'Delete 'Success '!:  '\n  '\y showfc(deletefile(FC,F)) '\n) > 
+
+        if findfile(FC,F) .
+
+
+
+rl [deleteall] :        
+        < rm ; [ mc | [N1,N2,FL,FC] ] ; BK ; nil >
+        => < idle ; [mc | [N1,N2,FL,fcnil] ]; BK ; ('\g 'Delete 'Success '!:  '\n  '\y showfc(fcnil) '\n) > 
+
+        .        
+
+crl [deletefaile] :        
+        < DeleteFile(F) ; [ mc | [N1,N2,FL,FC] ] ;  BK ;  nil >
+        => < idle ; [mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'Delete 'Failed '!:  '\n  '\y showfc(FC) '\n) > 
+
+        if not findfile(FC,F) .
+
+
+
+crl [store2success] :
+
+        < store(F) ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => if findfile(FC,F) 
+           then   
+                 (if findfileim(FL,F) then
+                  < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'FILE 'Stored '!:  '\n  '\y showfc(FC) '\n) >
+
+                   
+                else  
+                 < idle ; [ add2fileinmc(mc , N1 , getfc(FC,F),N2, getfc(FC,F))  | [getmain(getlivelist(add2fileinmc(mc , N1 , getfc(FC,F),N2, getfc(FC,F)) )),getslave(getlivelist(add2fileinmc(mc , N1 , getfc(FC,F),N2, getfc(FC,F)) )),(FL,[F,N1,N2]),deletefile(FC,F) ] ];  BK ; ('\g 'Store 'Success '!:  '\n '\y showfs((FL,[F,N1,N2])) '\n) > 
+           
+                      
+                fi)
+
+          else
+
+          < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'FILE 'NOT 'EXIST '!:  '\n  '\y showfc(FC) '\n) >
+           fi 
+
+      
+
+        if N1 =/= 0 /\ N2 =/= 0 . 
+
+
+crl [store1success] :        
+       < store(F) ; [ mc | [N1,N2,FL,FC] ] ;   BK ; nil >
+        => if   findfile(FC,F) 
+           then  
+                  if findfileim(FL,F) then
+
+                    < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'FILE 'Stored '!:  '\n  '\y showfs(FL) '\n) >
+                  else
+
+
+
+            < idle ; [ add1fileinmc(mc , N1 , getfc(FC,F))  | [getmain(getlivelist(add1fileinmc(mc , N1 , getfc(FC,F)) )),getslave(getlivelist( add1fileinmc(mc , N1 , getfc(FC,F)) )),(FL,[F,N1,N2]),deletefile(FC,F) ] ];  BK ; ('\g 'Store 'one 'copy' '!:  '\n '\y showfs((FL,[F,N1,N2])) '\n) > 
+                 fi
+
+           else
+          < idle ; [mc | [N1,N2,FL,deletefile(FC,F)] ];  BK ; ('\r 'FILE 'NOT 'EXIST '!:  '\n  '\y showfc(FC) '\n) >
+           fi 
+
+        if  N1 =/= 0 /\ N2 == 0 .
+
+crl [storefailed] :        
+        < store(F) ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => < idle ; [mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'No 'Machine 'Available '!:  '\n  '\y showfs(FL) '\n ) > 
+
+        if   N1 == 0  .
+
+
+
+crl [storeallfail] :        
+        < storeall ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        =>  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'No 'Machine 'Available '!:  '\n  '\y showfs(FL) '\n ) > 
+
+        if   N1 == 0  .
+
+
+crl [storeall] :        
+        < storeall ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+  =>  
+        if existfileinm(FL,FC) 
+        then  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'File 'EXISTS '!:  '\n  '\y showfs(FL) '\n ) > 
+        else  < idle ; storeAll([ mc | [N1,N2,FL,FC] ]) ; BK ;  ('\g 'all 'store 'success '!:  '\n  ) > 
+        fi 
+        if   N1 =/= 0  .
+
+
+crl [removesuccess] :        
+       < remove(F) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        => if  ( open?( mc,getmainlocate(FL,F) ) and  open?( mc,getslavelocate(FL,F) )  )
+
+            then   
+            < idle ; [ remove2fileinmc(mc,getmainlocate(FL,F),getslavelocate(FL,F),F)  | [getmain(getlivelist(remove2fileinmc(mc,getmainlocate(FL,F),getslavelocate(FL,F),F) )),getslave(getlivelist( remove2fileinmc(mc,getmainlocate(FL,F),getslavelocate(FL,F),F) )),removefileinfl(FL,F),FC ] ];  BK ; ('\g 'Remove 'success '!:  '\n '\y showfs(removefileinfl(FL,F)) '\n) > 
+           
+           else
+          < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'MACHINE 'NOT 'AVAILABLE '!:  '\n  '\y showfs(FL) '\n) >
+           fi 
+
+        if  findfileim(FL,F) .
+
+
+
+ crl [removefail] :        
+       < remove(F) ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => 
+          < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; ('\r 'FILE 'NOT 'EXIST '!:  '\n  '\y showfs(FL) '\n) >
+          
+
+        if  not findfileim(FL,F)  .    
+
+
+
+      
+
+
+
+rl [showall] :        
+       < showall ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => 
+          < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; 
+          ('\o '---------------- '\n 
+          '\o '| 'GLOBAL 'STATE '|  '\n 
+          '\o '---------------- '\n   
+           '\o 'File 'to 'be 'stored ': '\n   '\y showfc(FC) '\n
+           '\o '---------------- '\n   
+           '\o 'File 'Stored:  '\n  
+            
+      
+           '\y showfs(FL) '\n 
+           '\o '---------------- '\n   
+           '\g showlm(getlivelist(mc)) 
+           '\o '---------------- '\n   
+          ) 
+
+          > .
+
+rl [showbackup] :        
+       < showbackup ;  CU ; [ mc | [N1,N2,FL,FC] ]  ;  nil >
+        => 
+          < idle ;  CU ; [ mc | [N1,N2,FL,FC] ]  ; 
+          (
+            '\o '---------------- '\n 
+          '\o '| 'BACKUP 'STATE '|  '\n 
+          '\o '---------------- '\n  
+           '\o 'File 'to 'be 'stored ': '\n   '\y showfc(FC) '\n
+           '\o 'File 'Stored:  '\n  
+      
+           '\y showfs(FL) '\n 
+           '\g showlm(getlivelist(mc)) '\n
+          ) 
+
+          > .
+
+
+
+
+
+
+          
+
+rl [showfs] :        
+       < showfs ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => 
+          < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; 
+          ('\o '--------------- '\n 
+          '\o '| 'File 'System '|  '\n 
+          '\o '--------------- '\n   
+      
+           '\g showfs(FL) '\n  ) > .
+
+rl [help] :        
+       < help ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => 
+          < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; 
+          ('\o '---------------- '\n 
+          '\o '| 'GLOBAL 'STATE '|  '\n 
+          '\o '---------------- '\n  
+
+           '\y 'File 'to 'be 'stored ': showfc(FC) '\n
+           '\g showlm(getlivelist(mc)) '\n
+          ) 
+
+          > .
+
+rl [man] :        
+       < man ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        => 
+          < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; 
+          (
+            '\n
+           '\o '======================================== '\n
+           '\o '************ 'Command 'List '**************   '\n  
+           '\o '======================================== '\n
+           '\y 'Createfile ': '\o 'filename 'content         '\n
+           '\y 'cf  ' ' ' ' ' ' ' ' ': '\o 'filelist      '\n
+           '\y 'DeleteFile ': '\o 'filename   '\n
+           '\y 'rm         '\n
+           '\o '======================================== '\n
+           '\y 'store  ' ' ' ' ' ': '\o 'filename         '\n
+           '\y 'remove ' ' ' '  ': '\o 'filename         '\n
+           '\y 'storeall '\n
+           '\y 'alter  ' ' ' ' ' ': '\o 'filename 'content         '\n
+           '\y 'alter! ' ' ' '  ': '\o 'filename 'content 'machineID        '\n
+           '\o '======================================== '\n
+           '\y 'vi ' ' ' ' ' ' ' '  ': '\o 'filename         '\n
+           '\y 'vi ' ' ' ' ' ' ' '  ': '\o 'filename 'machineID         '\n
+           '\y 'locate ' ' ' '   ': '\o 'filename         '\n
+           '\y 'checkcon ' ' ': '\o 'filename         '\n
+           '\o '======================================== '\n
+           '\y 'run ' ' ' ' ' ' '   ': '\o 'machineID        '\n
+           '\y 'close ' ' ' ' '    ': '\o 'machineID        '\n
+           '\y 'backup       '\n
+           '\y 'restore         '\n
+           '\y 'init         '\n
+           '\o '======================================== '\n
+           '\y 'showall '\n
+           '\y 'showfs '\n
+           '\y 'showbackup '\n
+           '\y 'man '\n
+           '\o '**************************************** '\n 
+
+
+          ) 
+
+          > .
+
+
+ 
+
+ rl [run] :        
+       < run(N) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  if  open?(mc,N) 
+            then     < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; ('\r 'MACHINE  'IS 'RUNNING '! '\n ) >
+            else
+                     < idle ; [ openNm(mc,N) | [ getmain(getlivelist( openNm(mc,N)   )) ,   getslave(getlivelist( openNm(mc,N)   ))   ,FL,FC] ];  BK ; ('\g 'MACHINE 'OPEN 'SUCCESS '!  '\n  ) >
+            fi      .
+
+
+ rl [close] :        
+       < close(N) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  if  not open?(mc,N) 
+            then     < idle ; [ mc | [N1,N2,FL,FC] ];  BK ; ('\r 'MACHINE  'IS 'CLOSED '! '\n)  >
+            else
+                     < idle ; [ closeNm(mc,N) | [ getmain(getlivelist( closeNm(mc,N)   )) ,   getslave(getlivelist( closeNm(mc,N)   ))   ,FL,FC] ];  BK ; ('\g 'MACHINE 'CLOSE 'SUCCESS '!  '\n  ) >
+            fi      . 
+  
+rl [locatefile] :       
+       < locate(F) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>   if  findfileim(FL,F)  
+          
+          then < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\y 'main: showN(getmainlocate(FL,F))  '\y 'slave: showN(getslavelocate(FL,F))  '\n  ) >
+          
+          else
+
+         < idle ; [ mc | [N1,N2,FL,FC] ] ;  BK ; ('\r 'FILE 'NOT 'EXIST '!:  '\n  ) >
+       fi . 
+
+
+
+rl [visitfile] :       
+       < vi(F) ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        =>   if  findfileim(FL,F)  
+          
+          then  if  open?( mc,getmainlocate(FL,F) ) 
+                then  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\y showflist(F) ': '\n   '\o showfilecontent(   getfc(getfilelistfromconfig(mc, getmainlocate(FL,F) ) ,F  )    ) '\n  ) >
+                else
+                      if   getslavelocate(FL,F) =/= 0   and open?( mc,getslavelocate(FL,F) ) 
+                          then  < idle ; [ mc | [N1,N2,FL,FC] ] ;  BK ; ('\y  showfilecontent(   getfc(getfilelistfromconfig(mc, getslavelocate(FL,F) ) ,F  )    ) '\n  ) >
+                          else
+                           < idle ; [ mc | [N1,N2,FL,FC] ] ;  BK ; ('\r 'MACHINE 'NOT 'AVAILABLE '!:  '\n  ) >
+
+
+                         fi
+
+                fi
+
+
+          
+
+       
+          
+          else
+
+         < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'FILE 'NOT 'EXIST '!:  '\n  ) >
+       fi .
+
+
+  rl [visitfilefromN] :       
+       < vi(F,N) ; [ mc | [N1,N2,FL,FC] ] ; BK ;  nil >
+        =>   if  findfileim(FL,F)  
+             then       if findfile( getfilelistfromconfig(mc,N) ,F )
+                        then 
+                              if open?( mc,N ) 
+                              then   < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\y showflist(F) ': '\n    '\o showfilecontent( getfc(getfilelistfromconfig(mc,N ) ,F  )    ) '\n  ) >
+                              else   < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'MACHINE 'NOT 'AVAILABLE '!:  '\n  )  >
+                              fi 
+                        else  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'FILE 'NOT 'IN 'THIS 'MACHINE '!:  '\n  )  >
+                        fi  
+          
+         
+                
+          
+          
+
+       
+          
+          else
+
+         < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'FILE 'NOT 'EXIST '!:  '\n  ) >
+       fi .     
+
+
+
+crl [alter] :        
+       < alter(F,S) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        => if  ( open?( mc,getmainlocate(FL,F) ) and  open?( mc,getslavelocate(FL,F) )  )
+
+            then   
+            < idle ; [ alter2inmc(mc,getmainlocate(FL,F),getslavelocate(FL,F),F,S) | [N1,N2,FL,FC]  ]; BK ;  ('\g 'alter 'success '!:  '\n) > 
+           
+           else
+          < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'MACHINE 'NOT 'AVAILABLE '!:  '\n  ) >
+           fi 
+
+        if  findfileim(FL,F) .
+
+
+
+ crl [alterinN] :        
+       < alter!(F,S,N) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        => if  findfile( getfilelistfromconfig(mc,N) ,F )
+           then    if open?( mc,N ) 
+                   then  < idle ; [ alterinmc(mc,N,F,S) | [N1,N2,FL,FC]  ]; BK ;  ('\g 'alter 'success '!:  '\n) > 
+                   else  < idle ; [mc | [N1,N2,FL,FC] ];  BK ; ('\r 'MACHINE 'NOT 'AVAILABLE '!:  '\n  ) >
+                   fi 
+           else  
+         < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'FILE 'NOT 'IN 'THIS 'MACHINE '!:  '\n  )  >
+           fi 
+
+        if  findfileim(FL,F) .       
+
+
+
+  crl [alterfail] :        
+       < alter(F,S) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  < idle ; [ mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'FILE 'NOT 'EXIST '!:  '\n ) >
+
+        if  not findfileim(FL,F) .
+
+
+
+
+  crl [alterfailinN] :        
+       < alter!(F,S,N) ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  < idle ; [ mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'FILE 'NOT 'EXIST '!:  '\n ) >
+
+        if  not findfileim(FL,F) .
+
+
+
+rl [backups] :       
+       < backup ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  if  open?(mc,1) and  open?(mc,2) and open?(mc,3) and  open?(mc,4)  
+            then  < idle ; [ mc | [N1,N2,FL,FC] ]; [ mc | [N1,N2,FL,FC] ]  ;  ('\g 'backup 'success '!:  '\n ) >
+            else  < idle ; [ mc | [N1,N2,FL,FC] ]; BK ;  ('\r 'MACHINE 'NOT 'ALL 'AVAILABLE '!:  '\n ) >
+            fi .
+        
+
+rl [restore] :       
+       < restore ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  if  open?(mc,1) and  open?(mc,2) and open?(mc,3) and  open?(mc,4)  
+            then  < idle ; BK ; BK  ;  ('\g 'restore 'success '!:  '\n ) >
+            else  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'MACHINE 'NOT 'ALL 'AVAILABLE '!:  '\n ) >
+            fi .
+
+
+
+          
+
+rl [checkcon] :       
+       < checkcon ; [ mc | [N1,N2,FL,FC] ] ;  BK ; nil >
+        =>  if  open?(mc,1) and  open?(mc,2) and open?(mc,3) and  open?(mc,4)  
+            then  < idle ;  [ mc | [N1,N2,FL,FC] ]  ; BK  ;  ('\r 'inconsistent ' '!:   '\n    showfs(  precon([ mc | [N1,N2,FL,FC] ]   )   )   ) >
+            else  < idle ; [ mc | [N1,N2,FL,FC] ] ; BK ;  ('\r 'MACHINE 'NOT 'ALL 'AVAILABLE '!:  '\n ) >
+            fi .
+
+       
+
+
+op showfc : Filecontent -> QidList .
+eq showfc(FC) = metaPrettyPrint(upModule('FILE, false), upTerm(FC) ) . 
+op showlm : Livemachine  -> QidList .
+op showms : Machine-state -> QidList .
+eq showms(M1[o1,N1,FC]) = '\g 'M_1 ':  '\y showfclist(FC) '\n .
+eq showms(M2[o1,N1,FC]) = '\g 'M_2 ':  ('\y showfclist(FC)) '\n .
+eq showms(M3[o1,N1,FC]) = '\g 'M_3 ': '\y showfclist(FC) '\n .
+eq showms(M4[o1,N1,FC]) = '\g 'M_4 ': '\y showfclist(FC) '\n .
+eq showlm(lm # m1) = showlm(lm) showms(m1) . 
+eq showlm(lmnil) = 'Machine 'State:  '\n .
+
+op showfs : Filelocate ->  QidList .
+op showfclist : Filecontent -> QidList .
+op showflist : Filelist ->  QidList .
+eq showflist(flist) =  metaPrettyPrint(upModule('FILE, false), upTerm(flist) ) .
+eq showfs(FL) =  showflist(fltolist(FL)) .
+eq showfclist(FC) = showflist(fctolist(FC)) .
+
+
+op showfilecontent : Filecontent ->  QidList .
+eq showfilecontent([F,S]) = qid(S) . 
+
+op showN : Nat ->  QidList .
+eq showN(0) = nil .
+eq showN(1) = '\g 'M_1 .
+eq showN(2) = '\g 'M_2 .
+eq showN(3) = '\g 'M_3 .
+eq showN(4) = '\g 'M_4 .
+
+
+
+endm
+
+
+***(
+
+
+( CreateFile(f(1),"123") )
+( CreateFile(f(2),"123") )
+( store(f(2)) )
+
+
+)

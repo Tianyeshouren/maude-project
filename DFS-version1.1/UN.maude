@@ -1,0 +1,110 @@
+fmod UN is
+including FILE .
+including MACHINE .
+sorts UNstate Config .
+--- 第一个参数是 open的机器的列表（也可以是第一个是主，第二个是备，否则是nil） 第二个是文件的主备都在哪个机器上 第三个是 之后要存什么文件
+
+op [_,_,_,_]  :  Nat Nat Filelocate Filecontent -> UNstate .
+
+op [_|_] : Machine-config UNstate -> Config .
+
+---op[_,_] : Config Config -> exConfig .
+
+
+var F : File .
+var FL : Filelocate .
+var FC : Filecontent .
+
+var mc : Machine-config .
+vars ms1 ms2 ms3 ms4 : Machine-state .
+
+vars N1 N2 M N  : Nat .
+var S : String .
+
+
+
+
+
+
+
+op precon : Config -> Filelocate .
+
+
+
+eq precon( [ mc | [M,N,(flnil),FC ] ]) =  flnil .
+
+
+eq precon( [ mc | [M,N,([F,N1,N2]),FC ] ]) =  
+	if N2 == 0 
+	then  flnil  
+	else 
+		if    getfc(getfilelistfromconfig(mc,N1),F )  ==  getfc(getfilelistfromconfig(mc,N2),F )
+		then  flnil    
+		else  [F,N1,N2]    
+		fi 
+	fi .
+
+
+
+eq precon( [ mc | [M,N,(FL,[F,N1,N2]),FC ] ]) =  
+	if N2 == 0 
+	then precon( [ mc | [ M,N,(FL),FC ] ] ) 
+	else 
+		if    getfc(getfilelistfromconfig(mc,N1),F )     ==  getfc(getfilelistfromconfig(mc,N2),F )
+		then  precon( [ mc | [ M,N,(FL),FC ] ] )    
+		else  [F,N1,N2], precon( [ mc | [ M,N,(FL),FC ] ])    
+		fi 
+	fi .	
+
+
+
+
+op storeAll : Config -> Config .
+
+eq storeAll( [mc | [ M,N,FL,fcnil ] ] ) =  [mc | [ M,N,FL,fcnil ] ]  . 
+
+ceq storeAll( [mc | [M,N,FL,(FC,[F,S]) ] ] ) = 
+
+storeAll( [add2fileinmc(mc , M , [F,S],N, [F,S] )  | [getmain(getlivelist(add2fileinmc(mc , M , [F,S],N, [F,S]) )),getslave(getlivelist(add2fileinmc(mc , M , [F,S] ,N, [F,S]) )) ,(FL,[F,M,N]),FC ] ] )  
+if M =/= 0 /\ N =/= 0 .
+
+
+ceq storeAll( [mc | [M,N,FL,(FC,[F,S]) ] ] ) = 
+
+storeAll( [add1fileinmc(mc , M , [F,S])  | [getmain(getlivelist(add1fileinmc(mc , M, [F,S] ) )),getslave(getlivelist( add1fileinmc(mc , M , [F,S]) )) ,(FL,[F,M,N]),FC ] ] ) 
+if M =/= 0 /\ N == 0 .
+
+
+
+
+ceq storeAll( [mc | [M,N,FL,(FC,[F,S]) ] ] ) = [mc | [M,N,FL,(FC,[F,S]) ] ]
+if M == 0 /\ N == 0 .
+
+
+
+
+endfm 
+
+
+
+
+***(
+
+
+
+
+
+
+
+
+
+red precon([< M1[open,0,[f(1),"12"]], M2[open,0,[f(1),"12"]], M3[open,0,fcnil], M4[open,0,fcnil] > | [1,2,[f(1),1,2],fcnil] ]) . 
+
+
+red precon([< M1[open,0,[f(1),"12"]], M2[open,0,[f(1),"123"]], M3[open,0,[f(2),"zsd"]], M4[open,0,[f(2),"zsd2"]] > | [1,2,[f(1),1,2],[f(2),3,4],fcnil] ]) . 
+
+
+
+
+
+)

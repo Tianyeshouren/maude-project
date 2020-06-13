@@ -1,0 +1,277 @@
+fmod MACHINE is
+
+including FILE .
+
+
+sorts MachineID Machine-state Machine Machine-config  Livemachine  .
+sort ms .
+ops open close : -> ms [ctor] .
+
+subsort Machine-state < Livemachine .
+
+subsort Machine-state < Machine-config .
+
+
+vars MS1 MS2 MS3 MS4 : Machine-state .
+var MC : Machine-config .
+var M : Machine .
+
+var Ms : ms .
+vars  L N A B C D : Nat .
+vars FC FC2 : Filecontent .
+var F1 : File .
+var s : String .
+
+
+
+
+op M1[_,_,_] : ms Nat Filecontent -> Machine-state .
+op M2[_,_,_] : ms Nat Filecontent -> Machine-state .
+op M3[_,_,_] : ms Nat Filecontent -> Machine-state .
+op M4[_,_,_] : ms Nat Filecontent -> Machine-state .
+
+op <_,_,_,_> : Machine-state Machine-state Machine-state Machine-state -> Machine-config .
+
+
+
+
+---
+
+op lmnil : -> Livemachine .
+op _#_ : Livemachine Livemachine -> Livemachine [assoc id: lmnil] .
+
+
+var lm : Livemachine .
+
+----
+op getmid : Machine-state -> Livemachine .
+eq getmid(M1[open,N,FC]) = M1[open,N,FC] .
+eq getmid(M1[close,N,FC]) = lmnil .
+eq getmid(M2[open,N,FC]) = M2[open,N,FC] .
+eq getmid(M2[close,N,FC]) = lmnil .
+eq getmid(M3[open,N,FC]) = M3[open,N,FC] .
+eq getmid(M3[close,N,FC]) = lmnil .
+eq getmid(M4[open,N,FC]) = M4[open,N,FC] .
+eq getmid(M4[close,N,FC]) = lmnil .
+
+
+op getlivelist : Machine-config -> Livemachine .
+
+eq getlivelist(< MS1,MS2,MS3,MS4 >) =  getmid(MS1) # getmid(MS2) # getmid(MS3)# getmid(MS4) .
+
+op removeinlm : Livemachine Nat -> Livemachine .
+
+eq removeinlm(lmnil,L) = lmnil .
+eq removeinlm((MS1 # lm), L) = if L == getmn(MS1) then lm else  (MS1 # removeinlm(lm,L))  fi .
+
+------
+op getmain : Livemachine -> Nat .
+eq getmain(lmnil ) = 0 .
+eq getmain(MS1) = getmn(MS1) . 
+eq getmain(MS1 # MS2) = if getfilenum(MS2) < getfilenum(MS1)  then getmn(MS2)  else  getmn(MS1)   fi .
+eq getmain(MS1 # MS2 # lm) = if getfilenum(MS2) < getfilenum(MS1)  then getmain(MS2 # lm)   else  getmain(MS1 # lm)    fi .
+
+
+
+op getslave : Livemachine -> Nat .
+eq getslave(lm) = getmain(removeinlm(lm,getmain(lm))) . 
+
+
+
+
+---获取机器编号
+op getmn : Machine-state -> Nat .
+eq getmn(M1[Ms,N,FC])  = 1 .
+eq getmn(M2[Ms,N,FC])  = 2 .
+eq getmn(M3[Ms,N,FC])  = 3 .
+eq getmn(M4[Ms,N,FC])  = 4 .
+
+---获取机器open还是close 
+op getms : Machine-state -> ms . 
+
+eq getms(M1[Ms,N,FC]) = Ms . 
+eq getms(M2[Ms,N,FC]) = Ms . 
+eq getms(M3[Ms,N,FC]) = Ms . 
+eq getms(M4[Ms,N,FC]) = Ms . 
+
+---获取机器N的状态 
+op getMachine-state : Machine-config Nat -> Machine-state .
+ceq getMachine-state(< MS1,MS2,MS3,MS4 >, N )  = MS1
+if N == 1 . 
+ceq getMachine-state(< MS1,MS2,MS3,MS4 >, N )  = MS2
+if N == 2 . 
+ceq getMachine-state(< MS1,MS2,MS3,MS4 >, N )  = MS3
+if N == 3 . 
+ceq getMachine-state(< MS1,MS2,MS3,MS4 >, N )  = MS4
+if N == 4 . 
+
+---改变状态
+op change :  ms -> ms .
+eq change(open) = close .
+eq change(close) = open .
+
+
+
+
+---判断状态
+op open? : Machine-config Nat -> Bool .
+
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = true
+if N == 0 . 
+
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = true
+if N == 1 /\ getms(MS1) == open .
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = false
+if N == 1 /\ getms(MS1) == close . 
+
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = true
+if N == 2 /\ getms(MS2) == open .
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = false
+if N == 2 /\ getms(MS2) == close .
+
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = true 
+if N == 3 /\ getms(MS3) == open .
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = false
+if N == 3 /\ getms(MS3) == close .
+
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = true
+if N == 4 /\ getms(MS4) == open .
+ceq open?(< MS1,MS2,MS3,MS4 > , N)  = false
+if N == 4 /\ getms(MS4) == close .
+
+---获取机器N的文件列表
+op getfilelist : Machine-state -> Filecontent .
+
+eq getfilelist(M1[Ms,N,FC])  = FC .
+eq getfilelist(M2[Ms,N,FC])  = FC .
+eq getfilelist(M3[Ms,N,FC])  = FC .
+eq getfilelist(M4[Ms,N,FC])  = FC .
+
+
+op getfilelistfromconfig : Machine-config Nat  -> Filecontent .
+ceq getfilelistfromconfig(< MS1,MS2,MS3,MS4 > , N) = getfilelist(MS1)   
+if N == 1 .
+	ceq getfilelistfromconfig(< MS1,MS2,MS3,MS4 > , N) = getfilelist(MS2)   
+if N == 2 .
+	ceq getfilelistfromconfig(< MS1,MS2,MS3,MS4 > , N) = getfilelist(MS3)   
+if N == 3 .
+	ceq getfilelistfromconfig(< MS1,MS2,MS3,MS4 > , N) = getfilelist(MS4)   
+if N == 4 .
+
+---获取机器N的文件number
+
+op getfilenum : Machine-state -> Nat  .
+
+eq getfilenum(M1[Ms,N,FC])  = N .
+eq getfilenum(M2[Ms,N,FC])  = N .
+eq getfilenum(M3[Ms,N,FC])  = N .
+eq getfilenum(M4[Ms,N,FC])  = N .
+
+
+
+
+----
+op addfileinms : Machine-state Filecontent -> Machine-state .
+eq addfileinms(M1[Ms,N,FC] , FC2)  = M1[Ms, N + 1 , FC,FC2] .
+eq addfileinms(M2[Ms,N,FC] , FC2)  = M2[Ms, N + 1 , FC,FC2] .
+eq addfileinms(M3[Ms,N,FC] , FC2)  = M3[Ms, N + 1 , FC,FC2] .
+eq addfileinms(M4[Ms,N,FC] , FC2)  = M4[Ms, N + 1 , FC,FC2] .
+
+op add1fileinmc : Machine-config Nat Filecontent  -> Machine-config .
+ceq add1fileinmc(< MS1,MS2,MS3,MS4 > , N, FC ) = < addfileinms(MS1,FC),MS2,MS3,MS4 >  if N == 1 .
+ceq add1fileinmc(< MS1,MS2,MS3,MS4 > , N, FC ) = < MS1,addfileinms(MS2,FC),MS3,MS4 >  if N == 2 .
+ceq add1fileinmc(< MS1,MS2,MS3,MS4 > , N, FC ) = < MS1,MS2,addfileinms(MS3,FC),MS4 >  if N == 3 .
+ceq add1fileinmc(< MS1,MS2,MS3,MS4 > , N, FC ) = < MS1,MS2,MS3,addfileinms(MS4,FC) >  if N == 4 .
+
+
+op add2fileinmc : Machine-config Nat Filecontent Nat Filecontent -> Machine-config .
+eq add2fileinmc(MC,N,FC,L,FC2 ) =  add1fileinmc(add1fileinmc(MC , N, FC ) , L,FC2 ) .
+
+
+op removefileinms : Machine-state File -> Machine-state .
+eq removefileinms(M1[Ms,N,FC] , F1)  = M1[Ms, sd(N,1) , deletefile(FC ,F1)] .
+eq removefileinms(M2[Ms,N,FC] , F1)  = M2[Ms, sd(N,1) , deletefile(FC ,F1)] .
+eq removefileinms(M3[Ms,N,FC] , F1)  = M3[Ms, sd(N,1) , deletefile(FC ,F1)] .
+eq removefileinms(M4[Ms,N,FC] , F1)  = M4[Ms, sd(N,1) , deletefile(FC ,F1)] .
+
+op remove1fileinmc : Machine-config Nat File -> Machine-config .
+ceq remove1fileinmc(< MS1,MS2,MS3,MS4 > , N, F1) =  < MS1,MS2,MS3,MS4 >  if N == 0 .
+ceq remove1fileinmc(< MS1,MS2,MS3,MS4 > , N, F1) =  < removefileinms(MS1,F1),MS2,MS3,MS4 >  if N == 1 .
+ceq remove1fileinmc(< MS1,MS2,MS3,MS4 > , N, F1) =  < MS1,removefileinms(MS2,F1),MS3,MS4 >  if N == 2 .
+ceq remove1fileinmc(< MS1,MS2,MS3,MS4 > , N, F1) =  < MS1,MS2,removefileinms(MS3,F1),MS4 >  if N == 3 .
+ceq remove1fileinmc(< MS1,MS2,MS3,MS4 > , N, F1) =  < MS1,MS2,MS3,removefileinms(MS4,F1) >  if N == 4 .
+
+op remove2fileinmc : Machine-config Nat Nat File -> Machine-config .
+eq remove2fileinmc(MC,N,L,F1) =  remove1fileinmc(remove1fileinmc(MC,N,F1),L,F1 ) .
+
+---
+
+op openmachine : Machine-state -> Machine-state .
+eq openmachine(M1[Ms,N,FC]) = M1[open,N,FC] .
+eq openmachine(M2[Ms,N,FC]) = M2[open,N,FC] .
+eq openmachine(M3[Ms,N,FC]) = M3[open,N,FC] .
+eq openmachine(M4[Ms,N,FC]) = M4[open,N,FC] .
+
+op openNm : Machine-config Nat -> Machine-config .
+ceq openNm(< MS1,MS2,MS3,MS4 >,N) =	 < openmachine(MS1),MS2,MS3,MS4 > if N == 1 .
+ceq openNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,openmachine(MS2),MS3,MS4 > if N == 2 .
+ceq openNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,MS2,openmachine(MS3),MS4 > if N == 3 .
+ceq openNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,MS2,MS3,openmachine(MS4) > if N == 4 .
+
+op closemachine : Machine-state -> Machine-state .
+eq closemachine(M1[Ms,N,FC]) = M1[close,N,FC] .
+eq closemachine(M2[Ms,N,FC]) = M2[close,N,FC] .
+eq closemachine(M3[Ms,N,FC]) = M3[close,N,FC] .
+eq closemachine(M4[Ms,N,FC]) = M4[close,N,FC] .
+
+op closeNm : Machine-config Nat -> Machine-config .
+ceq closeNm(< MS1,MS2,MS3,MS4 >,N) =	 < closemachine(MS1),MS2,MS3,MS4 > if N == 1 .
+ceq closeNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,closemachine(MS2),MS3,MS4 > if N == 2 .
+ceq closeNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,MS2,closemachine(MS3),MS4 > if N == 3 .
+ceq closeNm(< MS1,MS2,MS3,MS4 >,N) =	 < MS1,MS2,MS3,closemachine(MS4) > if N == 4 .
+
+
+
+op alterma : Machine-state File String -> Machine-state  .
+eq alterma(M1[Ms,N,FC],F1,s) = M1[Ms,N,upd(FC,F1,s)] .
+eq alterma(M2[Ms,N,FC],F1,s) = M2[Ms,N,upd(FC,F1,s)] .
+eq alterma(M3[Ms,N,FC],F1,s) = M3[Ms,N,upd(FC,F1,s)] .
+eq alterma(M4[Ms,N,FC],F1,s) = M4[Ms,N,upd(FC,F1,s)] .
+
+op alterinmc : Machine-config Nat File String -> Machine-config .
+ceq alterinmc(< MS1,MS2,MS3,MS4 >, N , F1, s ) = < MS1,MS2,MS3,MS4 > if N == 0 .
+ceq alterinmc(< MS1,MS2,MS3,MS4 >, N , F1, s ) = < alterma(MS1,F1,s),MS2,MS3,MS4 > if N == 1 .
+ceq alterinmc(< MS1,MS2,MS3,MS4 >, N , F1, s ) = < MS1,alterma(MS2,F1,s),MS3,MS4 > if N == 2 .
+ceq alterinmc(< MS1,MS2,MS3,MS4 >, N , F1, s ) = < MS1,MS2,alterma(MS3,F1,s),MS4 > if N == 3 .
+ceq alterinmc(< MS1,MS2,MS3,MS4 >, N , F1, s ) = < MS1,MS2,MS3,alterma(MS4,F1,s) > if N == 4 .
+
+op alter2inmc : Machine-config Nat Nat File String -> Machine-config .
+eq alter2inmc(MC,N,L,F1,s)  = alterinmc(  alterinmc(MC,N,F1,s),L,F1,s) .
+
+
+
+
+
+endfm
+
+
+
+
+
+***(
+
+
+red  < M1[open,0,fcnil] ,M2[open,0,fcnil],M3[open,0,fcnil],M4[open,0,fcnil] > .
+
+red getmain(getlivelist(< M1[close,0,fcnil],M2[close,0,fcnil], M3[open,0,fcnil],M4[close,0,fcnil] >)) .
+
+red removeinlm(getlivelist(< M1[close,0,fcnil],M2[close,0,fcnil], M3[open,0,fcnil],M4[close,0,fcnil] >),3) .
+
+red getmain(getlivelist(< M1[open,0,fcnil],M2[close,0,fcnil], M3[open,3,fcnil],M4[close,0,fcnil] >)) .
+
+red add2fileinmc(< M1[open,0,fcnil],M2[close,0,fcnil], M3[open,3,fcnil],M4[close,0,fcnil] > ,1, [f(0), "a"] ,3,[f(1), "b"]) .
+
+
+
+
+)
