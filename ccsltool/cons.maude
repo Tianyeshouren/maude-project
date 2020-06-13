@@ -1,0 +1,143 @@
+fmod CONSTRAINTS is
+  including CLOCK .
+  including NAT .
+  sorts Constraint Constraints .
+  subsort Constraint < Constraints .
+  op ccslempty : -> Constraints [ctor] .
+  op __ : Constraints Constraints -> Constraints [ctor assoc comm id: ccslempty] .
+  --- subclock
+	op _<<_    : Clock Clock  -> Constraint [ctor] .
+  --- exclusion
+	op _#_     : Clock Clock  -> Constraint [ctor] .
+  --- alternate
+	op _~_     : Clock Clock  -> Constraint [ctor] .
+  --- deadline
+	op _!_     : Clock Clock  -> Constraint [ctor] .
+
+
+
+
+ 
+  sort ConfElt Conf  Vstate .
+  subsort ConfElt < Conf .
+  op [_,_;_] : Clock TickList Nat -> ConfElt [ctor] .
+  op coempty : -> Conf [ctor] .
+  op _,_ : Conf Conf -> Conf [ctor assoc comm id: coempty] .
+
+
+  vars CO1 CO2 CON : Constraint .
+  vars CS PHI : Constraints .
+  vars C1 C2 C3 : Clock .
+  vars TL1 TL2 TL3 : TickList .
+  vars F F' : ClockSet .
+  vars K N N1 N2 N3 K' : Nat .
+  vars X X' : Conf .
+  vars Y Y2 : ConfElt .
+  var P : NzNat .
+
+  sort CCSLState .
+  op <_;_;_;_> : ClockSet Constraints Conf Nat -> CCSLState [ctor] .
+
+  op <_;_;_>  : Conf Constraints Nat -> Vstate [ctor] .
+
+  op getv : CCSLState -> Vstate .
+  op vsempty : -> Vstate . 
+  eq getv(< F ; PHI ; X ; K > ) = < X ; PHI ;  0 > .
+
+
+
+
+
+
+  
+ 
+ 
+ 
+ 
+
+
+  op cfl : Constraint Constraints -> Bool .
+  eq cfl ( CO1 ,  ccslempty) = false .
+  eq cfl (CO1 ,( CO2 CS) ) = if CO1 == CO2 then true else  cfl(CO1 , CS) fi .
+  
+  op getCinConfe : ConfElt -> Clock . 
+  eq getCinConfe([C1,TL1 ; N1 ]) = C1 .
+  
+  op getCS : Conf -> ClockSet .
+  eq getCS(coempty) = cempty .
+  eq getCS(Y,X) = getCinConfe(Y) | getCS(X) .
+  
+  op delets : ConfElt  Conf -> Conf .
+  eq delets( Y, (Y2 ,X)) =  if getCinConfe(Y) == getCinConfe(Y2) then X else Y2 , delets( Y, (X))  fi .    
+  eq delets(Y,coempty) = coempty .
+
+
+  op rb : ConfElt Nat -> ConfElt .
+  eq rb([C1, TL1 ; N1], 0) = [C1, TL1 ; N1] .
+  eq rb([C1, (TL1, 1); N1], K) = rb([C1, TL1 ; N1 - 1], K - 1) .
+  eq rb([C1, (TL1, 0); N1], K) = rb([C1, TL1 ; N1], K - 1) .
+
+  op rollback : Conf Nat -> Conf .
+  eq rollback(coempty, K) = coempty .
+  eq rollback((Y, X), K) = rb(Y, K), rollback(X, K) . 
+
+
+  op fsatisfy : ClockSet Conf Constraint -> Bool .
+
+
+  eq fsatisfy(F, X, ccslempty) = true .
+  
+  --- Subclock
+
+  eq fsatisfy(F, ([C1, TL1 ; N1], [C2, TL2 ; N2], X), C1 << C2) = 
+    if not (C1 i F) or (C2 i F) then true else false fi .
+  
+  --- Exclusion
+
+  eq fsatisfy(F, ([C1, TL1 ; N1], [C2, TL2 ; N2], X), C1 # C2) =
+    if not (C1 i F) or not (C2 i F) then true else false fi .
+  
+  --- Alternate
+  eq fsatisfy(F, ([C1, TL1 ; N1], [C2, TL2 ; N2], X), C1 ~ C2) = 
+    if (not fsatisfy(F, ([C1, TL1 ; N1], [C2, TL2 ; N2], X), C1 # C2)) or (N1 > N2 and (C1 i F)) or (N1 == N2 and (C2 i F)) then false else true fi . 
+
+  --- Deadline
+  eq fsatisfy(F, ([C1, TL1 ; N1], [C2, TL2 ; N2], X), C1 ! C2) = 
+    if (N1 == N2) and (C2 i F) and (not (C1 i F)) then false else true fi .
+
+  eq fsatisfy(F, X,(CON  PHI)  ) = if (fsatisfy(F, X, CON)) then fsatisfy(F, X, PHI) else false fi .
+  
+  --- update here
+
+  op update : Conf ClockSet -> Conf .
+  eq update(([C1, TL1 ; N1], X), F) = 
+    if (C1 i F) then ([C1, (TL1, 1) ; N1 + 1], update(X, F)) else ([C1, (TL1, 0) ; N1], update(X, F)) fi .
+  eq update(coempty, F) = coempty .
+
+
+
+  op satisfy : Conf Constraints Nat -> Bool .
+  eq satisfy(X, ccslempty, K) = true .
+  
+  --- Subclock
+  eq satisfy(([C1, TL1 ; N1 ], [C2, TL2 ; N2 ], X), C1 << C2, K) =
+    if get(TL1, K) == 1 then get(TL2, K) == 1 else true fi .
+
+  --- Exclusion
+  eq satisfy(([C1, TL1 ; N1 ], [C2, TL2 ; N2 ], X) , C1 # C2, K) =
+    if get(TL1, K) == 1 and get(TL2, K) == 1 then false else true fi .
+
+  --- Alternate 
+  eq satisfy(([C1, TL1 ; N1 ], [C2, TL2 ; N2 ], X) , C1 ~ C2, K) = 
+    if (cal(TL1, K) >= cal(TL2, K)) and (cal(TL1, K) <= cal(TL2, K) + 1) and satisfy(([C1, TL1 ; N1 ], [C2, TL2 ; N2 ], X), C1 # C2, K) then true else false fi .
+
+  --- Deadline
+  eq satisfy(([C1, TL1 ; N1 ], [C2, TL2 ; N2 ], X), C1 ! C2, K) =
+    if (cal(TL1, K) >= cal(TL2, K)) then true else false fi .
+  
+  eq satisfy(X, (CON PHI), K) = if satisfy(X, CON, K) then satisfy(X, PHI, K) else false fi .
+
+
+
+
+endfm

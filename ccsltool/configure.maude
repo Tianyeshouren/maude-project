@@ -1,0 +1,104 @@
+fmod USER is
+
+including  CONSTRAINTS .
+op defccsl : -> CCSLState .
+
+---user definition----
+
+eq defccsl  = s2 .
+
+
+
+op t1  : ->  CCSLState .
+eq t1 = < 
+('c1 | 'c2 | 'c3 ) ; 
+('c1 ~ 'c2)('c2 ~ 'c3)('c1 << 'c2) ; 
+[ 'c1, tlnil ; 0], [ 'c2, tlnil ; 0], [ 'c3, tlnil ; 0]; 
+0 >  .
+
+op t2  : -> CCSLState .
+eq t2 =  < 
+'c1 | 'c2  ; 
+('c1 ~ 'c2) ; 
+[ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 
+0 > .
+
+
+op s1  : -> CCSLState .
+eq s1 = < 
+('c1 | 'c2 | 'c3 | 'clock1 | 'clock2) ; 
+('c1 ~ 'c2)('c2 ~ 'c3)('c1 << 'clock1)('clock1 << 'c1)('c3 ! 'clock2) ; 
+[ 'c1, tlnil ; 0], [ 'c2, tlnil ; 0], [ 'c3, tlnil ; 0], [ 'clock1, tlnil ; 0], [ 'clock2, tlnil ; 0] ; 
+0  >  .
+
+
+op s2 : -> CCSLState .
+eq s2 =  < 
+'c1 | 'c2 | 'c3 | 'clock2 | 'clock1   ; 
+ 
+ ('c1 ~ 'c2) ('c2 ~ 'c3) ('c1 << 'clock1) ('clock1 << 'c1) ('c3 ! 'clock2) ; 
+['c1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 ; 2], ['c2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 ; 2], ['c3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ; 2], ['clock1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 ; 2], ['clock2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ; 2] ; 
+16 > .
+
+
+
+
+
+
+
+endfm
+
+***(
+test 1
+================
+eq defccsl = < 
+('c1 | 'c2 | 'c3 | 'clock1 | 'clock2) ; 
+('c1 ~ 'c2)('c2 ~ 'c3)('c1 << 'clock1)('clock1 << 'c1)('c3 ! 'clock2) ; 
+[ 'c1, tlnil ; 0], [ 'c2, tlnil ; 0], [ 'c3, tlnil ; 0], [ 'clock1, tlnil ; 0], [ 'clock2, tlnil ; 0] ; 
+0  >  . 
+
+
+test 2
+==============2
+
+eq defccsl =  < 
+('c1 | 'c2 | 'c3 ) ; 
+('c1 ~ 'c2)('c2 ~ 'c3)('c1 << 'c2) ; 
+[ 'c1, tlnil ; 0], [ 'c2, tlnil ; 0], [ 'c3, tlnil ; 0]; 
+0 
+
+>
+ .
+
+
+test3
+========
+
+eq defccsl =  < 
+'c1 | 'c2  ; 
+ 
+('c1 ~ 'c2) ; 
+[ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 
+
+0 
+
+>
+ .
+
+
+judge cons
+=========================
+
+eq defccsl =  < 
+'c1 | 'c2 | 'c3 | 'clock2 | 'clock1   ; 
+ 
+ ('c1 ~ 'c2) ('c2 ~ 'c3) ('c1 << 'clock1) ('clock1 << 'c1) ('c3 ! 'clock2) ; 
+['c1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], ['c2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], ['c3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], ['clock1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], ['clock2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1] ; 
+
+0 
+
+>
+ .
+
+
+)

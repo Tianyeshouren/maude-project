@@ -1,0 +1,43 @@
+mod MAIN is 
+
+
+  including CONSTRAINTS . 
+  including BOOL .
+  protecting META-LEVEL .
+  
+  
+
+  vars C1 C2 C3 : Clock .
+  vars TL1 TL2 TL3 : TickList .
+  var CON : Constraint .
+  var PHI : Constraints .
+  vars F F' : ClockSet .
+  vars K N N1 N2 N3 K' : Nat .
+  vars X X' : Conf .
+  var Y : ConfElt .
+  var P : NzNat .
+
+  
+
+
+  
+
+  crl [next] :   < (F | F') ; PHI ; X ; K > =>  < (F | F') ; PHI ; update(X, F) ; K + 1 >  
+    if F =/= cempty /\ fsatisfy(F, X, PHI)  .
+
+
+  crl [ver] :  < X ; PHI ; K > => < X ; PHI ; K + 1 >
+    if satisfy(X, PHI, K) .
+
+  
+endm
+
+
+
+***(
+
+rew[2] < 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, 0,0,0 ; 3 ],['c2 , 1,1,1  ; 3 ] ; 3   > .
+
+
+rew[2] < 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > .
+  )

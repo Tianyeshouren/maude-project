@@ -1,0 +1,25 @@
+fmod TICK-LIST is 
+  including INT .
+  sort TickList .
+  subsort Int < TickList .
+  op tlnil : -> TickList .
+  op _,_ : TickList TickList -> TickList [id: tlnil assoc] .
+
+
+  vars N1 N2 : Int .
+  var TL1 : TickList .
+
+  op get : TickList Int -> Int .
+  eq get((N2, TL1), N1) = 
+    if N1 == 1 then N2 else get(TL1, N1 - 1) fi .
+    
+  op cal : TickList Int -> Int .
+  eq cal(TL1, 0) = 0 .
+  eq cal((1, TL1), N1) = cal(TL1, N1 - 1) + 1 .
+  eq cal((0, TL1), N1) = cal(TL1, N1 - 1) .
+
+  op lastIsIdle : TickList -> Bool .
+  eq lastIsIdle(tlnil) = true .
+  eq lastIsIdle(TL1, N1) = if N1 == 0 then true else false fi .
+
+endfm

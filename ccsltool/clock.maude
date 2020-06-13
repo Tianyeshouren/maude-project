@@ -1,0 +1,21 @@
+fmod CLOCK is
+  including QID .
+  including BOOL .
+  including TICK-LIST .
+  sorts Clock ClockEle ClockSet .
+  subsort ClockEle < ClockSet .
+  subsort Qid < Clock < ClockSet .
+  
+  op cempty : -> ClockSet .
+  op _|_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: cempty] .
+  op _i_ : Clock ClockSet -> Bool .
+  op [_,_] : Clock TickList -> ClockEle [ctor] .
+ 
+ 
+  vars C1 C2 : Clock .
+  var CS1 : ClockSet .
+  eq C1 i cempty = false .
+  eq C1 i (C2 | CS1) = 
+    if (C1 == C2) then true else C1 i CS1 fi .
+endfm
+

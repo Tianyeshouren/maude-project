@@ -1,0 +1,22 @@
+1.将ccsltool文件夹放到任意你想要的位置
+2.然后打开终端，进入到ccsltool文件夹里 （cd ccsltool/）
+3.在终端输入maude（前提按照好maude，若未配置环境变量，需要自行配置）
+4.在maude命令行输入 load interface.maude （回车结束输入）
+5.在maude命令行输入 loop ccc.
+6.打开command文件，从第4行开始照着文本内容输入（括号不可缺少）
+一行一行输入。
+若中途出错，大概率需要退出maude，然后重新开始。
+
+ps：
+部分功能介绍
+finde： 寻找当前调度是否符合CCSL约束，不满足则返回冲突的那一步。
+tick(N): 在当前调度下再走N步，使得新生成的调度依旧满足约束。
+re:让所有时钟调度归0。
+vf(N):验证调度从1到N是否符合约束。
+show:展示一些信息。
+def：载入默认的时钟，约束，调度。
+configure文件里的defccsl这个项就算默认的时钟，约束，调度。
+可以自行配置。
+(eq defccsl = < xx; xxx ;xxxx ;xx  > . )
+
+

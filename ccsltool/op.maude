@@ -1,0 +1,73 @@
+
+***(
+
+rew[2] < 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, 0,0,0 ; 3 ],['c2 , 1,1,1  ; 3 ] ; 3   > .
+
+
+rew[2] < 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > .
+
+red upTerm(< 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > ) .
+  
+
+red downTerm('<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,
+    ''c2.Sort],'_`,_['`[_`,_;_`][''c1.Sort,'tlnil.TickList,'0.Zero],
+    '`[_`,_;_`][''c2.Sort,'tlnil.TickList,'0.Zero]],'0.Zero]
+ , def ) .
+
+
+red metaXapply(upModule('MAIN, false), upTerm(< 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > ) , 
+    'next , none, 0, unbounded, 0 ) . 
+
+red getTerm( metaXapply(upModule('MAIN, false), upTerm(< 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > ) , 
+    'next , none, 0, unbounded, 0 ) ) .
+
+
+red downTerm(  getTerm( metaXapply(upModule('MAIN, false), upTerm(< 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > ) , 
+    'next , none, 0, unbounded, 0 ) )  , def ) .
+
+
+red downTerm( findsche (upTerm(< 'c1 | 'c2 ; 'c1 # 'c2 ; [ 'c1, tlnil ; 0 ],['c2 , tlnil  ; 0 ] ; 0   > ), 'next ), def )     .
+
+
+
+red  getTerm(metaReduce( upModule('CCSL-INTERFACE,false) , upTerm( UN )  ))   .
+
+
+
+red metaSearch(upModule(’MAIN, false),  upTerm(getv(UN)) ,
+             upTerm( < X'; PHI; N >  ), ’* , unbounded , 0 ) .  
+
+
+
+red truev(2 , < 'c1 | 'c2  ; ('c1 ~ 'c2) ; [ 'c1, 1,0,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 0 
+
+>   )  .
+
+red truev(
+
+3 , < 
+'c1 | 'c2  ; 
+ 
+('c1 ~ 'c2) ; 
+[ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 
+
+0 
+
+>   )  .
+
+
+
+
+
+
+red downTerm(getE(< 'c1 | 'c2  ; ('c1 ~ 'c2) ; [ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 3 > ) , vsempty).
+
+red metaPrettyPrint(upModule('MAIN, false), (getE(< 'c1 | 'c2  ; ('c1 ~ 'c2) ; [ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 3 > ) ) .
+
+
+red ninv(  downTerm(getE(< 'c1 | 'c2  ; ('c1 ~ 'c2) ; [ 'c1, 1,1,1 ; 0], [ 'c2, 0,1,0 ; 0] ; 3 > ) , vsempty) )  .
+
+
+
+  )
+ 

@@ -1,0 +1,334 @@
+load tick-list.maude
+load clock.maude
+load cons.maude
+load configure.maude 
+load main.maude 
+
+
+
+mod CCSL-INTERFACE is
+	
+	including  USER .
+
+	including  LOOP-MODE .
+
+    protecting META-LEVEL .
+
+    
+  	
+  	
+  	including NAT .
+  	
+  	including BOOL .
+	
+
+
+
+    sorts  addclockAction ccslAction verifyAction  Action .
+    subsorts  addclockAction ccslAction verifyAction  < Action .
+   
+    op <_;_;_> : Action  CCSLState QidList -> State .
+    op ccc : -> System .
+    op idle : -> Action .
+    op show : -> Action .
+    op ac : Clock -> addclockAction .
+    op accsl : Constraint -> Action .
+    op as : ConfElt -> Action .
+    op def : -> Action .
+    op tick : Nat -> Action .
+    op verify : Nat -> Action .
+    op re :  -> Action .
+    op vf : Nat -> Action .
+    op finde : -> Action .
+
+
+
+
+
+	eq ccc = [ nil, < idle ; < cempty ; ccslempty   ; coempty ; 0  > ; nil > , nil ] .
+
+	
+	
+ 	var  A : Action . 
+    vars QIL QIL' QIL'' : QidList .
+    
+    vars C1 C2 C3 : Clock .
+    vars TL1 TL2 TL3 : TickList .
+    var CON : Constraint .
+    var PHI : Constraints .
+    vars F F' : ClockSet .
+    vars K N N1 N2 N3 K' : Nat .
+    vars X X' : Conf .
+    var Y : ConfElt .
+    var P : NzNat .
+    var UN : CCSLState .
+    var VS : Vstate . 
+
+
+    
+
+
+
+    var T : Term .
+    var Q : Qid .
+  var res? : [ResultTriple?] .
+  var err? : [ResultPair?] .
+  
+
+
+  	op getE : CCSLState -> Term .
+  	
+  	ceq getE(UN)  = if err? :: ResultPair
+        then getTerm(err?)
+        else upTerm(UN)
+        fi 
+		if err? := 
+         metaRewrite(upModule('MAIN, false),  
+              upTerm(getv(UN)), unbounded) .  
+
+
+
+ 	op truev : Nat CCSLState  -> Bool  .
+ 	ceq truev(N, < F ; PHI ; X ; K >   )  
+ 	= if res? :: ResultTriple
+        then true 
+        else false 
+        fi 
+		if (N > 0)
+         /\ res? := 
+         metaSearch(upModule('MAIN, false), upTerm( < X ; PHI  ; 0 > ), upTerm( < X ; PHI ; N >  ) , nil,   '* , unbounded, 0 ) . 
+
+
+    op showclock : ClockSet -> QidList .
+    op showtick : Conf -> QidList .
+    op showti : ConfElt -> QidList .
+    eq showti([C1,TL1 ; N]) = C1 ': metaPrettyPrint(upModule('TICK-LIST, false), upTerm(TL1) ) ':  metaPrettyPrint(upModule('TICK-LIST, false), upTerm(N) ) '\n .
+    eq showtick(Y , X) = showti(Y) showtick(X) .
+    eq showtick(coempty) = nil .
+
+    op showccsl : Constraints -> QidList .
+    op showcc : Constraint -> QidList .
+    eq showcc(C1 << C2 ) = C1 '<< C2 '\n .
+    eq showcc(C1 # C2 ) = C1 '# C2 '\n . 
+    eq showcc(C1 ~ C2 ) = C1 '~ C2 '\n .
+    eq showcc(C1 ! C2 ) = C1 '! C2 '\n .
+
+    eq showccsl(CON PHI) = showcc(CON) showccsl(PHI) .
+    eq showccsl(ccslempty) = nil .
+
+
+	eq showclock( C1 | F) = C1  showclock(F) .
+	eq showclock( cempty) = nil .
+
+	op set : ClockSet -> Conf .
+	
+	eq set( C1 | F ) = [ C1 , tlnil ; 0] , set(F) . 
+	eq set(cempty) = coempty .
+
+ 	op ninv : Vstate -> QidList  .
+  	eq ninv (< X ; PHI ; N >) = metaPrettyPrint(upModule('TICK-LIST, false), upTerm(N) ) .  
+
+  crl [in] :
+      [QIL, < idle ; < F ; PHI ; X ; N > ; nil >, QIL']
+       => if T:ResultPair? :: ResultPair  
+          then 
+                 [nil,  < downTerm(getTerm(T:ResultPair?), idle) ; < F ; PHI ; X ; N > ; nil >,  QIL']
+                                                 
+                           
+          
+          else [nil, < idle ; < F ; PHI ; X ; N > ; nil > , 'ERROR 'INPUT: QIL]
+          fi
+       
+if QIL =/= nil
+/\ T:ResultPair?  := metaParse(upModule('CCSL-INTERFACE , false),  QIL, 'addclockAction) .
+
+
+crl [out] :
+       [QIL, < A ; < F ; PHI ; X ; N > ; QIL' > , QIL'']
+       => [QIL, < A ; < F ; PHI ; X ; N > ; nil > , QIL''  QIL']
+       if QIL' =/= nil .
+
+crl [addclock] :        
+        < ac(C2) ; < F ; PHI ; X ; N > ; nil >
+        => < idle ; < ( C2 | F ) ; PHI ; [ C2 , tlnil ; 0] , X ; N > ; ('\g 'add 'Success '!:  '\n ) > 
+
+        if not ( C2 i F ) .
+
+        
+
+crl [addfail] :        
+        < ac(C2) ; < F ; PHI ; X ; N > ; nil >
+        => < idle ; <  F  ; PHI ; X ; N > ; ('\g 'add 'failure '!:  '\n ) > 
+
+        if  C2 i F .
+
+crl [addccsl] :        
+        < accsl(CON) ; < F ; PHI ; X ; N > ; nil >
+        => < idle ; <  F  ; ( CON PHI ) ; X ; N > ; ('\g 'add 'Success '!:  '\n ) > 
+
+        if  not  cfl(CON , PHI) .
+
+crl [addccslf] :        
+        < accsl(CON) ; < F ; PHI ; X ; N > ; nil >
+        => < idle ; <  F  ;  PHI ; X ; N > ; ('\g 'add 'failure '!:  '\n ) > 
+
+        if  cfl(CON , PHI) .
+
+crl [mods] :        
+        < as(Y) ; < F ; PHI ; X ; N > ; nil >
+        => < idle ; <  F  ; PHI  ; (Y , delets(Y,X) ) ; N > ; ('\g 'modify 'Success '!:  '\n ) >
+        	
+  
+
+        if  (getCinConfe(Y) i F )  /\ getCinConfe(Y) i getCS(X)  .
+
+
+ crl [adds] :        
+        < as(Y) ; < F ; PHI ; X ; N > ; nil >
+        =>  
+
+       		 < idle ; <  F  ; PHI  ; (Y , X) ; N > ; ('\g 'add 'Success '!:  '\n ) > 
+       
+
+        if  (getCinConfe(Y) i F )  /\  ( not getCinConfe(Y) i getCS(X) )  .
+
+crl [addsf] :        
+        < as(Y) ; < F ; PHI ; X ; N > ; nil >
+        =>  
+        < idle ; <  F  ; PHI  ;  X ; N > ; ('\g 'add 'failure '!:  '\n ) > 
+        
+
+        if  not ( getCinConfe(Y) i F )  .
+
+
+ rl [zz] :        
+        < re ; < F ; PHI ; X ; N > ; nil >
+        =>  
+        < idle ; < F ; PHI ; set(F) ; 0 >  ; nil  >  .
+
+
+
+ rl [yushe] :        
+        < def ; < F ; PHI ; X ; N > ; nil >
+        =>  
+        < idle ; defccsl  ; ('\g 'read 'Success!  '\n ) >  .
+
+
+	rl [find] :        
+        < tick(N) ; UN ; nil >
+        =>  
+        if N > 0 then 
+        < tick(sd(N,1)) ; 
+       downTerm(  getTerm( metaXapply(upModule('MAIN, false), upTerm(UN) , 
+    'next , none, 0, unbounded, 0 ) )  , UN  ) 
+          ; nil >  
+
+          else
+              < show ; 
+            UN
+          ; ('\g 'result: 'find '!:  '\n ) >  
+
+          fi . 
+
+
+ rl [verify] :        
+        < vf(K) ; < F ; PHI ; X ; N > ; nil >
+        =>  if truev( K + 1 , < F ; PHI ; X ; N > ) then
+        < idle ; < F ; PHI ; X ; N >  ; ('\g 'true    '\n ) >  
+ 		else
+ 		< idle ; < F ; PHI ; X ; N >  ; ('\g 'false!   '\n ) >  
+ 		fi  .
+
+ 
+rl [finde] :        
+        < finde ; < F ; PHI ; X ; N > ; nil >
+        =>  if truev( N + 1 , < F ; PHI ; X ; N > ) then
+        < idle ; < F ; PHI ; X ; N >  ; ('\g 'NO 'Conflicit    '\n ) >  
+ 		else
+ 		< idle ; < F ; PHI ; X ; N >  ;   ninv(downTerm(getE( < F ; PHI ; X ; N > ),vsempty )   ) '\n
+
+ 		 >  
+ 		fi  .
+
+        
+        
+
+
+rl [show] :        
+       < show ; < F ; PHI ; X ; N > ;  nil >
+        => 
+          < idle ; < F ; PHI ; X ; N > ;
+          ('\o '------------- '\n 
+          '\o '| 'Clock 'Set '|  '\n 
+          '\o '------------- '\n   
+      
+           '\g showclock(F) '\n  
+           '\o '--------------------- '\n 
+          '\o '| 'Clock 'Constraints '|  '\n 
+          '\o '--------------------- '\n
+          '\g showccsl(PHI) 
+		  '\o '------------ '\n 
+          '\o '| 'Schedule '|  '\n 
+          '\o '------------ '\n   
+          '\o 'length:  metaPrettyPrint(upModule('TICK-LIST, false), upTerm(N) ) '\n  
+      
+           '\g showtick(X)  
+
+
+
+           ) > .
+
+          
+
+endm
+
+
+***(
+
+
+red <    >
+
+red < cempty ; ccslempty ; coempty ; 2  > .
+
+red < 'c1 ; ccslempty  ; [ 'c1 , 1,0,0,0,1,1,1 ; 7] ;   0 > .
+
+
+red downTerm(
+
+'<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]]
+    ,< cempty ; ccslempty ; coempty ; 0 >) .
+
+
+red metaRewrite(upModule('MAIN, false), '<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]] , 5 ) .   
+
+{'<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]],'CCSLState}
+
+ '<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]]
+
+
+
+red metaXapply(upModule('MAIN, false), '<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]] , 
+    'next , none, 0, unbounded, 0 ) . 
+
+
+red metaApply(upModule('MAIN , false),
+'<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]] , 'next, none, 0) .
+
+
+
+red metaReduce(upModule('MAIN, false), '<_;_;_;_>['_|_[''c1.Sort,''c2.Sort],'_#_[''c1.Sort,''c2.Sort],'_`,_[
+    '`[_`,_;_`][''c1.Sort,'_`,_['0.Zero,'0.Zero,'0.Zero],'s_^3['0.Zero]],'`[_`,_;_`][''c2.Sort,
+    '_`,_['s_['0.Zero],'s_['0.Zero],'s_['0.Zero]],'s_^3['0.Zero]]],'s_^3['0.Zero]] ) .
+)
